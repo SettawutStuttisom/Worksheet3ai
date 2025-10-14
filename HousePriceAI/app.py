@@ -8,12 +8,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
+# -----------------------------
+# 📁 ตั้งค่า Path ให้ชัดเจน
+# -----------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = os.path.join(BASE_DIR, "data", "train.csv")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model.pkl")
+
 st.set_page_config(page_title="🏠 House Price Prediction", layout="centered")
 st.title("🏠 ระบบทำนายราคาบ้านด้วย AI ")
 st.write("โมเดล Random Forest พร้อมระบบโหลด/เทรนอัตโนมัติใน Streamlit")
 
-MODEL_PATH = "model/best_model.pkl"
-DATA_PATH = "data/train.csv"
+# แสดงตำแหน่งไฟล์ที่มองหา (สำหรับตรวจสอบ)
+st.write("📁 ตำแหน่งที่มองหาไฟล์ train.csv:")
+st.code(DATA_PATH)
+st.write("📁 ตำแหน่งที่มองหาโมเดล:")
+st.code(MODEL_PATH)
 
 # -----------------------------
 # ฟังก์ชันเทรนโมเดล
@@ -21,7 +31,12 @@ DATA_PATH = "data/train.csv"
 def train_model():
     st.info("🚀 กำลังเทรนโมเดลใหม่ โปรดรอสักครู่...")
 
-    os.makedirs("model", exist_ok=True)
+    os.makedirs(os.path.join(BASE_DIR, "model"), exist_ok=True)
+
+    if not os.path.exists(DATA_PATH):
+        st.error("❌ ไม่พบไฟล์ train.csv ที่ตำแหน่งที่ระบุ")
+        st.stop()
+
     data = pd.read_csv(DATA_PATH)
 
     features = ["OverallQual", "GrLivArea", "GarageCars", "TotalBsmtSF", "FullBath", "YearBuilt"]
@@ -30,7 +45,12 @@ def train_model():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    model = RandomForestRegressor(n_estimators=200, max_depth=10, random_state=42, n_jobs=-1)
+    model = RandomForestRegressor(
+        n_estimators=200,
+        max_depth=10,
+        random_state=42,
+        n_jobs=-1
+    )
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
@@ -74,7 +94,8 @@ with col2:
     FullBath = st.slider("จำนวนห้องน้ำเต็ม (FullBath)", 0, 4, 2)
     YearBuilt = st.number_input("ปีที่สร้างบ้าน", 1900, datetime.datetime.now().year, 2005)
 
-input_data = pd.DataFrame([[OverallQual, GrLivArea, GarageCars, TotalBsmtSF, FullBath, YearBuilt]],
+input_data = pd.DataFrame(
+    [[OverallQual, GrLivArea, GarageCars, TotalBsmtSF, FullBath, YearBuilt]],
     columns=["OverallQual", "GrLivArea", "GarageCars", "TotalBsmtSF", "FullBath", "YearBuilt"]
 )
 
