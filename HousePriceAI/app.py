@@ -110,7 +110,7 @@ col_slider, col_number = st.columns(2)
 with col_slider:
     OverallQual = st.slider("คุณภาพโดยรวมของบ้าน (OverallQual)", 1, 10, 5)
     GarageCars = st.slider("จำนวนที่จอดรถในโรงรถ", 0, 4, 2)
-    FullBath = st.slider("จำนวนห้องน้ำเต็ม (FullBath)", 0, 4, 2)
+    FullBath = st.slider("จำนวนห้องน้ำ", 0, 4, 2)
 
 # 🔢 Number input ด้านขวา (Numeric)
 with col_number:
