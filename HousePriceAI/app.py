@@ -39,10 +39,15 @@ st.set_page_config(page_title="🏠 House Price Prediction", layout="centered")
 st.title("🏠 ระบบทำนายราคาบ้านด้วย AI (Decision Tree)")
 st.write("💡 ข้อมูลจาก Kaggle House Prices + ราคาทำนายในสกุลเงินบาท")
 
+# ตัวแปรเก็บค่าความแม่นยำ
+model_mse = None
+model_r2 = None
+
 # =============================================================================
 # 🧠 MODEL TRAINING FUNCTION
 # =============================================================================
 def train_model():
+    global model_mse, model_r2
     st.info("🚀 กำลังเทรนโมเดลใหม่ โปรดรอสักครู่...")
     os.makedirs(os.path.join(BASE_DIR, "model"), exist_ok=True)
 
@@ -60,16 +65,15 @@ def train_model():
     X = data[FEATURES]
     y = np.log1p(data["SalePrice"])
 
-    # 🟡 เทรนโมเดลโดยไม่แยก train/test
     model = DecisionTreeRegressor(**MODEL_PARAMS)
     model.fit(X, y)
 
     y_pred = model.predict(X)
-    mse = mean_squared_error(np.expm1(y), np.expm1(y_pred))
-    r2 = r2_score(np.expm1(y), np.expm1(y_pred))
+    model_mse = mean_squared_error(np.expm1(y), np.expm1(y_pred))
+    model_r2 = r2_score(np.expm1(y), np.expm1(y_pred))
 
-    joblib.dump(model, MODEL_PATH)
-    st.success(f"✅ เทรนโมเดลสำเร็จ! (MSE={mse:.2f}, R²={r2:.4f})")
+    joblib.dump((model, model_mse, model_r2), MODEL_PATH)
+    st.success(f"✅ เทรนโมเดลสำเร็จ! (MSE={model_mse:.2f}, R²={model_r2:.4f})")
     return model
 
 # =============================================================================
@@ -83,7 +87,7 @@ if not os.path.exists(MODEL_PATH):
         st.stop()
 else:
     try:
-        model = joblib.load(MODEL_PATH)
+        model, model_mse, model_r2 = joblib.load(MODEL_PATH)
         st.success("✅ โหลดโมเดลสำเร็จ")
     except Exception as e:
         st.error(f"❌ โหลดโมเดลไม่สำเร็จ: {e}")
@@ -127,7 +131,12 @@ if st.button("🔍 ทำนายราคาบ้าน (บาท)"):
             f"🏗️ ปีที่สร้าง: {YearBuilt} | 🚗 โรงรถ: {GarageCars} ช่อง | 🛁 ห้องน้ำ: {FullBath} ห้อง | 📐 พื้นที่ใช้สอย: {GrLivArea} ft² | พื้นที่ชั้นใต้ดิน: {TotalBsmtSF} ft²"
         )
 
-        # แสดง Feature และ Parameter ข้างล่าง
+        # 📈 แสดงค่าความแม่นยำของโมเดล
+        st.subheader("📈 ค่าความแม่นยำของโมเดล")
+        st.write(f"**MSE:** {model_mse:.2f}")
+        st.write(f"**R² Score:** {model_r2:.4f}")
+
+        # 🧩 Feature & Parameter
         st.subheader("🧩 ข้อมูลโมเดล Decision Tree")
         st.write("**Feature ที่ใช้เทรน:**")
         st.write(FEATURES)
