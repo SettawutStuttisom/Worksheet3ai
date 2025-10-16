@@ -4,7 +4,6 @@ import pandas as pd
 import streamlit as st
 import joblib
 
-from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -61,16 +60,13 @@ def train_model():
     X = data[FEATURES]
     y = np.log1p(data["SalePrice"])
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-
+    # 🟡 เทรนโมเดลโดยไม่แยก train/test
     model = DecisionTreeRegressor(**MODEL_PARAMS)
-    model.fit(X_train, y_train)
+    model.fit(X, y)
 
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(np.expm1(y_test), np.expm1(y_pred))
-    r2 = r2_score(np.expm1(y_test), np.expm1(y_pred))
+    y_pred = model.predict(X)
+    mse = mean_squared_error(np.expm1(y), np.expm1(y_pred))
+    r2 = r2_score(np.expm1(y), np.expm1(y_pred))
 
     joblib.dump(model, MODEL_PATH)
     st.success(f"✅ เทรนโมเดลสำเร็จ! (MSE={mse:.2f}, R²={r2:.4f})")
@@ -111,8 +107,10 @@ with col2:
     YearBuilt = st.number_input("ปีที่สร้างบ้าน", 1900, 2025, 2005)
 
 # รวมข้อมูลผู้ใช้เป็น DataFrame
-input_data = pd.DataFrame([[OverallQual, GrLivArea, GarageCars, TotalBsmtSF, FullBath, YearBuilt]],
-                          columns=FEATURES)
+input_data = pd.DataFrame(
+    [[OverallQual, GrLivArea, GarageCars, TotalBsmtSF, FullBath, YearBuilt]],
+    columns=FEATURES
+)
 
 # =============================================================================
 # 🔘 BUTTON FOR PREDICTION
