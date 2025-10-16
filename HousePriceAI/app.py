@@ -1,30 +1,27 @@
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 import streamlit as st
 import joblib
+
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
-# ================= CONFIGURATION =================
+# =============================================================================
+# 📁 CONFIGURATION
+# =============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "data", "train.csv")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model.pkl")
 
-# Feature สำคัญจาก Kaggle ที่ใช้เทรนโมเดล
 FEATURES = [
     "OverallQual",
     "GrLivArea",
     "GarageCars",
     "TotalBsmtSF",
     "FullBath",
-    "YearBuilt",
-    "TotRmsAbvGrd",
-    "LotArea",
-    "1stFlrSF",
-    "BedroomAbvGr",
-    "KitchenAbvGr"
+    "YearBuilt"
 ]
 
 MODEL_PARAMS = {
@@ -36,14 +33,18 @@ MODEL_PARAMS = {
 
 USD_TO_THB = 37.0
 
-# ================= STREAMLIT PAGE =================
+# =============================================================================
+# 🏡 STREAMLIT PAGE CONFIG
+# =============================================================================
 st.set_page_config(page_title="🏠 House Price Prediction", layout="centered")
 st.title("🏠 ระบบทำนายราคาบ้านด้วย AI (Decision Tree)")
 st.write("💡 ข้อมูลจาก Kaggle House Prices + ราคาทำนายในสกุลเงินบาท")
 
-# ================= MODEL TRAINING =================
+# =============================================================================
+# 🧠 MODEL TRAINING FUNCTION
+# =============================================================================
 def train_model():
-    st.info("🚀 กำลังเทรนโมเดลจาก Kaggle โปรดรอสักครู่...")
+    st.info("🚀 กำลังเทรนโมเดลใหม่ โปรดรอสักครู่...")
     os.makedirs(os.path.join(BASE_DIR, "model"), exist_ok=True)
 
     if not os.path.exists(DATA_PATH):
@@ -51,6 +52,7 @@ def train_model():
         st.stop()
 
     data = pd.read_csv(DATA_PATH)
+
     missing = [f for f in FEATURES if f not in data.columns]
     if missing:
         st.error(f"❌ ฟีเจอร์เหล่านี้ไม่มีในไฟล์: {missing}")
@@ -72,46 +74,70 @@ def train_model():
 
     joblib.dump(model, MODEL_PATH)
     st.success(f"✅ เทรนโมเดลสำเร็จ! (MSE={mse:.2f}, R²={r2:.4f})")
-    return model, mse, r2
+    return model
 
-# ================= LOAD OR TRAIN MODEL =================
-if os.path.exists(MODEL_PATH):
-    model = joblib.load(MODEL_PATH)
-    st.success("✅ โหลดโมเดลสำเร็จ")
+# =============================================================================
+# 📥 LOAD OR TRAIN MODEL
+# =============================================================================
+if not os.path.exists(MODEL_PATH):
+    if os.path.exists(DATA_PATH):
+        model = train_model()
+    else:
+        st.error("❌ ไม่พบไฟล์ data/train.csv")
+        st.stop()
 else:
-    model, mse, r2 = train_model()
+    try:
+        model = joblib.load(MODEL_PATH)
+        st.success("✅ โหลดโมเดลสำเร็จ")
+    except Exception as e:
+        st.error(f"❌ โหลดโมเดลไม่สำเร็จ: {e}")
+        st.stop()
 
-# ================= USER INPUT =================
-st.header("📋 ป้อนข้อมูลบ้านเพื่อทำนายราคา")
+# =============================================================================
+# 📝 USER INPUT FORM
+# =============================================================================
+st.header("📋 ป้อนข้อมูลบ้าน")
+
 col1, col2 = st.columns(2)
 
 with col1:
     OverallQual = st.slider("คุณภาพโดยรวมของบ้าน (OverallQual)", 1, 10, 5)
     GarageCars = st.slider("จำนวนรถที่จอดได้", 0, 5, 2)
     FullBath = st.slider("จำนวนห้องน้ำ", 0, 5, 2)
-    TotRmsAbvGrd = st.slider("จำนวนห้องทั้งหมดเหนือพื้นดิน", 2, 15, 6)
-    BedroomAbvGr = st.slider("จำนวนห้องนอน", 0, 10, 3)
 
 with col2:
     GrLivArea = st.number_input("พื้นที่ใช้สอย (ตร.ฟุต)", 500, 5000, 1500)
     TotalBsmtSF = st.number_input("พื้นที่ชั้นใต้ดิน (ตร.ฟุต)", 0, 3000, 800)
-    LotArea = st.number_input("ขนาดที่ดิน (ตร.ฟุต)", 1000, 20000, 8000)
-    FirstFlrSF = st.number_input("พื้นที่ชั้น 1 (ตร.ฟุต)", 500, 2000, 1200)
-    KitchenAbvGr = st.slider("จำนวนห้องครัว", 0, 5, 1)
     YearBuilt = st.number_input("ปีที่สร้างบ้าน", 1900, 2025, 2005)
 
-input_data = pd.DataFrame([[ 
-    OverallQual, GrLivArea, GarageCars, TotalBsmtSF, FullBath, 
-    YearBuilt, TotRmsAbvGrd, LotArea, FirstFlrSF, BedroomAbvGr, KitchenAbvGr
-]], columns=FEATURES)
+# รวมข้อมูลผู้ใช้เป็น DataFrame
+input_data = pd.DataFrame([[OverallQual, GrLivArea, GarageCars, TotalBsmtSF, FullBath, YearBuilt]],
+                          columns=FEATURES)
 
-# ================= PREDICTION =================
-if st.button("🔍 ทำนายราคาบ้าน"):
+# =============================================================================
+# 🔘 BUTTON FOR PREDICTION
+# =============================================================================
+if st.button("🔍 ทำนายราคาบ้าน (บาท)"):
     try:
         log_pred = model.predict(input_data)[0]
-        price_usd = np.expm1(log_pred)
-        price_thb = price_usd * USD_TO_THB
-        st.subheader("💰 ราคาบ้านที่ทำนาย")
-        st.write(f"ราคาประเมิน: **฿{price_thb:,.2f} บาท**")
+        base_price_usd = np.expm1(log_pred)
+        final_price_thb = base_price_usd * USD_TO_THB
+
+        st.subheader("💰 ผลการทำนายราคาบ้าน")
+        st.write(f"ราคาบ้านที่คาดการณ์: **฿{final_price_thb:,.2f} บาท**")
+        st.info(
+            f"🏗️ ปีที่สร้าง: {YearBuilt} | 🚗 โรงรถ: {GarageCars} ช่อง | 🛁 ห้องน้ำ: {FullBath} ห้อง | 📐 พื้นที่ใช้สอย: {GrLivArea} ft² | พื้นที่ชั้นใต้ดิน: {TotalBsmtSF} ft²"
+        )
+
+        # แสดง Feature และ Parameter ข้างล่าง
+        st.subheader("🧩 ข้อมูลโมเดล Decision Tree")
+        st.write("**Feature ที่ใช้เทรน:**")
+        st.write(FEATURES)
+        st.write("**Parameter ของโมเดล:**")
+        st.write(MODEL_PARAMS)
+
     except Exception as e:
         st.error(f"เกิดข้อผิดพลาดในการทำนาย: {e}")
+
+st.markdown("---")
+st.caption("🤖 พัฒนาโดย เสฎฐวุฒิ | วิชา AI | มข.")
