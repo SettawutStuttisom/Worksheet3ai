@@ -30,7 +30,7 @@ MODEL_PARAMS = {
     "random_state": 42,
 }
 
-USD_TO_THB = 37.0
+USD_TO_THB = 36.0
 
 # =============================================================================
 # 🏡 STREAMLIT PAGE CONFIG
