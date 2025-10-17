@@ -102,7 +102,7 @@ col1, col2 = st.columns(2)
 with col1:
     OverallQual = st.slider("คุณภาพโดยรวมของบ้าน (OverallQual)", 1, 10, 5)
     GarageCars = st.slider("จำนวนรถที่จอดได้", 0, 3, 2)
-    FullBath = st.slider("จำนวนห้องน้ำ", 0, 5, 2)
+    FullBath = st.slider("จำนวนห้องน้ำ", 0, 3, 2)
 
 with col2:
     GrLivArea = st.number_input("พื้นที่ใช้สอย (ตร.ฟุต)", 500, 5000, 1500)
